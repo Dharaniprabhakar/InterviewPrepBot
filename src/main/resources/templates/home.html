@@ -92,12 +92,46 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-4">
+                    <div class="category-card card text-center p-3 h-100" onclick="selectCategory('Microservices', this)">
+                        <div class="category-icon mb-2"><i class="bi bi-diagram-2-fill text-danger"></i></div>
+                        <div class="fw-semibold">Microservices</div>
+                        <small class="text-muted">Scaling, Kafka, Circuit Breaker, Saga</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4">
                     <div class="category-card card text-center p-3 h-100" onclick="selectCategory('HR/Behavioral', this)">
                         <div class="category-icon mb-2"><i class="bi bi-person-fill text-secondary"></i></div>
                         <div class="fw-semibold">HR / Behavioral</div>
                         <small class="text-muted">Soft skills, Teamwork, Leadership</small>
                     </div>
                 </div>
+           
+            </div>
+            <!-- Type any category -->
+            <div class="mt-4">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div style="height:1px; flex:1; background:#dee2e6;"></div>
+                    <span class="text-muted small fw-semibold px-2" style="white-space:nowrap; letter-spacing:0.05em;">OR SEARCH ANY TOPIC</span>
+                    <div style="height:1px; flex:1; background:#dee2e6;"></div>
+                </div>
+                <div class="position-relative" style="max-width: 500px;">
+                    <i class="bi bi-search position-absolute top-50 translate-middle-y" style="left:18px; font-size:1.05rem; color:#0d6efd; z-index:1;"></i>
+                    <input type="text" id="categoryTypeInput"
+                           class="form-control form-control-lg ps-5"
+                           placeholder="e.g. Kotlin, Redis, Docker, AWS, Hibernate..."
+                           style="border: 2px solid #d0e2ff;
+                                  border-radius: 14px;
+                                  background: #f5f8ff;
+                                  box-shadow: 0 4px 12px rgba(13,110,253,0.08);
+                                  font-size: 0.97rem;
+                                  transition: all 0.25s ease;"
+                           oninput="typeCategory(this.value)"
+                           onfocus="this.style.borderColor='#0d6efd'; this.style.background='#fff'; this.style.boxShadow='0 0 0 4px rgba(13,110,253,0.12)'"
+                           onblur="this.style.borderColor='#d0e2ff'; this.style.background='#f5f8ff'; this.style.boxShadow='0 4px 12px rgba(13,110,253,0.08)'"
+                           autocomplete="off">
+                    <span class="position-absolute top-50 translate-middle-y text-muted small" style="right:16px; pointer-events:none;">Press Enter ↵</span>
+                </div>
+                <p class="text-muted small mt-2 ms-1"><i class="bi bi-lightbulb me-1 text-warning"></i>Works with any topic — AI will generate questions on that subject.</p>
             </div>
             <input type="hidden" name="category" id="categoryInput" required>
         </div>
@@ -180,6 +214,32 @@
                     </div>
                 </div>
             </div>
+            <!-- Type any company -->
+            <div class="mt-4">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div style="height:1px; flex:1; background:#dee2e6;"></div>
+                    <span class="text-muted small fw-semibold px-2" style="white-space:nowrap; letter-spacing:0.05em;">OR SEARCH ANY COMPANY</span>
+                    <div style="height:1px; flex:1; background:#dee2e6;"></div>
+                </div>
+                <div class="position-relative" style="max-width: 500px;">
+                    <i class="bi bi-search position-absolute top-50 translate-middle-y" style="left:18px; font-size:1.05rem; color:#6f42c1; z-index:1;"></i>
+                    <input type="text" id="companyTypeInput"
+                           class="form-control form-control-lg ps-5"
+                           placeholder="e.g. Swiggy, Zomato, Razorpay, JP Morgan, Paytm..."
+                           style="border: 2px solid #e2d4f7;
+                                  border-radius: 14px;
+                                  background: #faf7ff;
+                                  box-shadow: 0 4px 12px rgba(111,66,193,0.08);
+                                  font-size: 0.97rem;
+                                  transition: all 0.25s ease;"
+                           oninput="typeCompany(this.value)"
+                           onfocus="this.style.borderColor='#6f42c1'; this.style.background='#fff'; this.style.boxShadow='0 0 0 4px rgba(111,66,193,0.12)'"
+                           onblur="this.style.borderColor='#e2d4f7'; this.style.background='#faf7ff'; this.style.boxShadow='0 4px 12px rgba(111,66,193,0.08)'"
+                           autocomplete="off">
+                    <span class="position-absolute top-50 translate-middle-y text-muted small" style="right:16px; pointer-events:none;">Press Enter ↵</span>
+                </div>
+                <p class="text-muted small mt-2 ms-1"><i class="bi bi-lightbulb me-1 text-warning"></i>Works with any company — AI will generate questions they are known to ask.</p>
+            </div>
             <input type="hidden" name="company" id="companyInput" value="General">
         </div>
 
@@ -234,7 +294,15 @@
         document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
         document.getElementById('categoryInput').value = value;
+        document.getElementById('categoryTypeInput').value = '';
         categorySelected = true;
+        checkReady();
+    }
+
+    function typeCategory(value) {
+        document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
+        document.getElementById('categoryInput').value = value.trim();
+        categorySelected = value.trim().length > 0;
         checkReady();
     }
 
@@ -242,6 +310,12 @@
         document.querySelectorAll('.company-card').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
         document.getElementById('companyInput').value = value;
+        document.getElementById('companyTypeInput').value = '';
+    }
+
+    function typeCompany(value) {
+        document.querySelectorAll('.company-card').forEach(c => c.classList.remove('selected'));
+        document.getElementById('companyInput').value = value.trim() || 'General';
     }
 
     function selectDifficulty(value, el) {
