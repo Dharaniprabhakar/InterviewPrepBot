@@ -11,6 +11,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -25,17 +28,25 @@ public class InterviewController {
         return "home";
     }
 
+    @GetMapping("/subtopics")
+    @ResponseBody
+    public List<String> getSubtopics(@RequestParam String category) {
+        return interviewService.generateSubtopics(category);
+    }
+
     @PostMapping("/start")
     public String startInterview(@RequestParam String category,
+                                  @RequestParam(defaultValue = "") String subtopic,
                                   @RequestParam String difficulty,
                                   @RequestParam(defaultValue = "General") String company,
                                   HttpSession session) {
         InterviewSession interviewSession = new InterviewSession();
         interviewSession.setCategory(category);
+        interviewSession.setSubtopic(subtopic);
         interviewSession.setDifficulty(difficulty);
         interviewSession.setCompany(company);
 
-        String firstQuestion = interviewService.generateQuestion(category, difficulty, company, interviewSession.getCompletedPairs());
+        String firstQuestion = interviewService.generateQuestion(category, subtopic, difficulty, company, interviewSession.getCompletedPairs());
         interviewSession.setCurrentQuestion(firstQuestion);
 
         session.setAttribute(SESSION_KEY, interviewSession);
@@ -92,6 +103,7 @@ public class InterviewController {
         interviewSession.setCurrentQuestionNumber(interviewSession.getCurrentQuestionNumber() + 1);
         String nextQuestion = interviewService.generateQuestion(
                 interviewSession.getCategory(),
+                interviewSession.getSubtopic(),
                 interviewSession.getDifficulty(),
                 interviewSession.getCompany(),
                 interviewSession.getCompletedPairs()

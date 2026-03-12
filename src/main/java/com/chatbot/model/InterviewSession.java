@@ -8,6 +8,7 @@ import java.util.List;
 @Data
 public class InterviewSession {
     private String category;
+    private String subtopic;
     private String difficulty;
     private String company;
     private List<QAPair> completedPairs = new ArrayList<>();

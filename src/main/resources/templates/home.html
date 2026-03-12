@@ -126,20 +126,42 @@
                                   font-size: 0.97rem;
                                   transition: all 0.25s ease;"
                            oninput="typeCategory(this.value)"
+                           onkeydown="handleCategoryEnter(event)"
                            onfocus="this.style.borderColor='#0d6efd'; this.style.background='#fff'; this.style.boxShadow='0 0 0 4px rgba(13,110,253,0.12)'"
                            onblur="this.style.borderColor='#d0e2ff'; this.style.background='#f5f8ff'; this.style.boxShadow='0 4px 12px rgba(13,110,253,0.08)'"
                            autocomplete="off">
-                    <span class="position-absolute top-50 translate-middle-y text-muted small" style="right:16px; pointer-events:none;">Press Enter ↵</span>
+                    <span id="categoryEnterHint" class="position-absolute top-50 translate-middle-y text-muted small" style="right:16px; pointer-events:none;">Press Enter ↵</span>
                 </div>
                 <p class="text-muted small mt-2 ms-1"><i class="bi bi-lightbulb me-1 text-warning"></i>Works with any topic — AI will generate questions on that subject.</p>
             </div>
             <input type="hidden" name="category" id="categoryInput" required>
         </div>
 
+        <!-- Step 1.5: Sub-topic -->
+        <div class="mb-5" id="subtopicSection" style="display:none;">
+            <h5 class="fw-bold mb-3">
+                <span class="badge bg-primary me-2">2</span> Choose a Sub-topic
+                <span class="text-muted fw-normal fs-6">(optional — narrows the question focus)</span>
+            </h5>
+            <div class="d-flex flex-wrap gap-2 mb-3" id="subtopicChips"></div>
+            <div class="position-relative" style="max-width: 400px;">
+                <i class="bi bi-tag position-absolute top-50 translate-middle-y" style="left:14px; font-size:1rem; color:#0d6efd; z-index:1;"></i>
+                <input type="text" id="subtopicTypeInput"
+                       class="form-control ps-5"
+                       placeholder="Or type a custom sub-topic..."
+                       style="border: 2px solid #d0e2ff; border-radius: 10px; background: #f5f8ff;"
+                       oninput="typeSubtopic(this.value)"
+                       onfocus="this.style.borderColor='#0d6efd'; this.style.background='#fff';"
+                       onblur="this.style.borderColor='#d0e2ff'; this.style.background='#f5f8ff';"
+                       autocomplete="off">
+            </div>
+            <input type="hidden" name="subtopic" id="subtopicInput">
+        </div>
+
         <!-- Step 2: Company -->
         <div class="mb-5">
             <h5 class="fw-bold mb-3">
-                <span class="badge bg-purple me-2" style="background-color:#6f42c1;">2</span>
+                <span class="badge bg-purple me-2" style="background-color:#6f42c1;">3</span>
                 Target Company <span class="text-muted fw-normal fs-6">(optional — defaults to General)</span>
             </h5>
             <div class="row g-3">
@@ -246,7 +268,7 @@
         <!-- Step 3: Difficulty -->
         <div class="mb-5">
             <h5 class="fw-bold mb-3">
-                <span class="badge bg-primary me-2">3</span> Select Difficulty
+                <span class="badge bg-primary me-2">4</span> Select Difficulty
             </h5>
             <div class="row g-3">
                 <div class="col-md-4">
@@ -290,19 +312,118 @@
     let categorySelected = false;
     let difficultySelected = false;
 
+    function showSubtopics(category) {
+        const section = document.getElementById('subtopicSection');
+        const chips = document.getElementById('subtopicChips');
+        document.getElementById('subtopicInput').value = '';
+        document.getElementById('subtopicTypeInput').value = '';
+        chips.innerHTML = '<span class="text-muted small"><span class="spinner-border spinner-border-sm me-2" role="status"></span>Loading sub-topics...</span>';
+        section.style.display = 'block';
+
+        fetch('/subtopics?category=' + encodeURIComponent(category))
+            .then(r => r.json())
+            .then(topics => {
+                chips.innerHTML = '';
+                topics.forEach(t => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-outline-primary btn-sm rounded-pill subtopic-chip';
+                    btn.textContent = t;
+                    btn.onclick = () => selectSubtopic(t, btn);
+                    chips.appendChild(btn);
+                });
+            })
+            .catch(() => {
+                chips.innerHTML = '<span class="text-danger small"><i class="bi bi-exclamation-circle me-1"></i>Could not load sub-topics.</span>';
+            });
+    }
+
+    function selectSubtopic(value, el) {
+        document.querySelectorAll('.subtopic-chip').forEach(c => c.classList.remove('active', 'btn-primary'));
+        el.classList.add('active', 'btn-primary');
+        el.classList.remove('btn-outline-primary');
+        document.querySelectorAll('.subtopic-chip:not(.active)').forEach(c => c.classList.add('btn-outline-primary'));
+        document.getElementById('subtopicInput').value = value;
+        document.getElementById('subtopicTypeInput').value = '';
+    }
+
+    function typeSubtopic(value) {
+        document.querySelectorAll('.subtopic-chip').forEach(c => {
+            c.classList.remove('active', 'btn-primary');
+            c.classList.add('btn-outline-primary');
+        });
+        document.getElementById('subtopicInput').value = value.trim();
+    }
+
     function selectCategory(value, el) {
         document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
         document.getElementById('categoryInput').value = value;
         document.getElementById('categoryTypeInput').value = '';
         categorySelected = true;
+        showSubtopics(value);
         checkReady();
+    }
+
+    let subtopicDebounce = null;
+
+    function handleCategoryEnter(e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        const value = e.target.value.trim();
+        if (!value) return;
+
+        clearTimeout(subtopicDebounce);
+        document.getElementById('categoryInput').value = value;
+        categorySelected = true;
+
+        // Show confirmed chip tag replacing the input
+        const wrapper = e.target.closest('.position-relative');
+        wrapper.innerHTML = `
+            <span class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill fw-semibold"
+                  style="background:#e7f1ff; border:2px solid #0d6efd; color:#0d6efd; font-size:0.97rem;">
+                <i class="bi bi-check-circle-fill"></i>${value}
+                <button type="button" onclick="clearCategoryTag()" class="btn-close btn-close-sm ms-1" style="font-size:0.6rem;"></button>
+            </span>`;
+
+        showSubtopics(value);
+        checkReady();
+    }
+
+    function clearCategoryTag() {
+        const wrapper = document.querySelector('#categoryTypeInput')?.closest('.position-relative') ||
+                        document.getElementById('startForm').querySelector('.position-relative');
+        wrapper.innerHTML = `
+            <i class="bi bi-search position-absolute top-50 translate-middle-y" style="left:18px; font-size:1.05rem; color:#0d6efd; z-index:1;"></i>
+            <input type="text" id="categoryTypeInput"
+                   class="form-control form-control-lg ps-5"
+                   placeholder="e.g. Kotlin, Redis, Docker, AWS, Hibernate..."
+                   style="border:2px solid #d0e2ff; border-radius:14px; background:#f5f8ff; box-shadow:0 4px 12px rgba(13,110,253,0.08); font-size:0.97rem; transition:all 0.25s ease;"
+                   oninput="typeCategory(this.value)"
+                   onkeydown="handleCategoryEnter(event)"
+                   onfocus="this.style.borderColor='#0d6efd'; this.style.background='#fff'; this.style.boxShadow='0 0 0 4px rgba(13,110,253,0.12)'"
+                   onblur="this.style.borderColor='#d0e2ff'; this.style.background='#f5f8ff'; this.style.boxShadow='0 4px 12px rgba(13,110,253,0.08)'"
+                   autocomplete="off">
+            <span id="categoryEnterHint" class="position-absolute top-50 translate-middle-y text-muted small" style="right:16px; pointer-events:none;">Press Enter ↵</span>`;
+        document.getElementById('categoryInput').value = '';
+        document.getElementById('subtopicSection').style.display = 'none';
+        document.getElementById('subtopicInput').value = '';
+        categorySelected = false;
+        checkReady();
+        document.getElementById('categoryTypeInput').focus();
     }
 
     function typeCategory(value) {
         document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
         document.getElementById('categoryInput').value = value.trim();
         categorySelected = value.trim().length > 0;
+        clearTimeout(subtopicDebounce);
+        if (value.trim().length < 3) {
+            document.getElementById('subtopicSection').style.display = 'none';
+            document.getElementById('subtopicInput').value = '';
+        } else {
+            subtopicDebounce = setTimeout(() => showSubtopics(value.trim()), 600);
+        }
         checkReady();
     }
 
